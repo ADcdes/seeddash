@@ -1,1 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SeedDash - Speedrun Leaderboards</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-[#12181d] text-gray-200 font-sans min-h-screen">
 
+  <!-- Header / Navigation -->
+  <header class="bg-[#1b232a] border-b border-gray-800 px-6 py-4 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <span class="text-2xl">🏆</span>
+      <h1 class="text-xl font-bold tracking-wide text-emerald-400">SeedDash</h1>
+    </div>
+    <div id="auth-section">
+      <button onclick="loginWithDiscord()" class="bg-[#5865F2] hover:bg-indigo-600 text-white px-4 py-2 rounded-md font-medium text-sm flex items-center gap-2">
+        <span>Login with Discord</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-6xl mx-auto p-6 space-y-8">
+    
+    <!-- Game Banner Header -->
+    <div class="bg-[#1b232a] p-6 rounded-lg border border-gray-800 flex justify-between items-center">
+      <div>
+        <h2 class="text-2xl font-bold text-white">Minecraft: Java Edition</h2>
+        <p class="text-xs text-gray-400 mt-1">Seed Leaderboards & Specialty Runs</p>
+      </div>
+      <button onclick="openSubmitModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-md text-sm">
+        + Submit Run
+      </button>
+    </div>
+
+    <!-- Category Tabs & Version Filters -->
+    <div class="bg-[#1b232a] p-4 rounded-lg border border-gray-800 space-y-4">
+      <div class="flex border-b border-gray-700 gap-2 overflow-x-auto pb-2" id="category-tabs">
+        <button onclick="setCategory('Crossbow%')" class="cat-btn px-4 py-2 rounded-t text-sm font-semibold bg-emerald-600 text-white" data-cat="Crossbow%">Crossbow%</button>
+        <button onclick="setCategory('Any% Glitchless')" class="cat-btn px-4 py-2 rounded-t text-sm font-semibold text-gray-400 hover:text-white" data-cat="Any% Glitchless">Any% Glitchless</button>
+        <button onclick="setCategory('All Advancements')" class="cat-btn px-4 py-2 rounded-t text-sm font-semibold text-gray-400 hover:text-white" data-cat="All Advancements">All Advancements</button>
+      </div>
+
+      <div class="flex gap-4 items-center text-sm">
+        <label class="text-gray-400">Version Filter:</label>
+        <select id="version-filter" onchange="fetchLeaderboard()" class="bg-[#12181d] text-white border border-gray-700 px-3 py-1 rounded">
+          <option value="All">All Versions</option>
+          <option value="1.20+">1.20+</option>
+          <option value="1.16.1">1.16.1</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Leaderboard Table -->
+    <div class="bg-[#1b232a] rounded-lg border border-gray-800 overflow-hidden">
+      <table class="w-full text-left text-sm text-gray-300">
+        <thead class="bg-[#12181d] text-xs uppercase text-gray-400 border-b border-gray-800">
+          <tr>
+            <th class="p-4">Rank</th>
+            <th class="p-4">Runner</th>
+            <th class="p-4">Time</th>
+            <th class="p-4">Version</th>
+            <th class="p-4">Proof</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body" class="divide-y divide-gray-800">
+          <!-- Leaderboard rows inject here -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Admin Moderation Panel (Only loads if Admin) -->
+    <div id="admin-panel" class="hidden bg-[#1b232a] p-6 rounded-lg border border-yellow-600/40 space-y-4">
+      <h3 class="text-lg font-bold text-yellow-400 flex items-center gap-2">🛡️ Admin Verification Queue</h3>
+      <div id="pending-runs" class="space-y-2 text-sm"></div>
+    </div>
+
+  </main>
+
+  <!-- Submit Run Modal -->
+  <div id="submit-modal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center p-4">
+    <div class="bg-[#1b232a] border border-gray-700 p-6 rounded-lg w-full max-w-md space-y-4">
+      <h3 class="text-xl font-bold text-white">Submit Speedrun</h3>
+      <form onsubmit="submitRun(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-gray-400 mb-1">Runner Name</label>
+          <input type="text" id="run-runner" required class="w-full bg-[#12181d] border border-gray-700 p-2 rounded text-white">
+        </div>
+        <div>
+          <label class="block text-gray-400 mb-1">Category</label>
+          <select id="run-category" class="w-full bg-[#12181d] border border-gray-700 p-2 rounded text-white">
+            <option value="Crossbow%">Crossbow%</option>
+            <option value="Any% Glitchless">Any% Glitchless</option>
+            <option value="All Advancements">All Advancements</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-gray-400 mb-1">Version</label>
+          <select id="run-version" class="w-full bg-[#12181d] border border-gray-700 p-2 rounded text-white">
+            <option value="1.20+">1.20+</option>
+            <option value="1.16.1">1.16.1</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-gray-400 mb-1">Time (in seconds)</label>
+          <input type="number" step="0.001" id="run-time" required placeholder="e.g. 42.5" class="w-full bg-[#12181d] border border-gray-700 p-2 rounded text-white">
+        </div>
+        <div>
+          <label class="block text-gray-400 mb-1">Video Proof URL</label>
+          <input type="url" id="run-proof" required placeholder="https://youtube.com/..." class="w-full bg-[#12181d] border border-gray-700 p-2 rounded text-white">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeSubmitModal()" class="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://rprbijuhajceaopiasbw.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwcmJpanVoYWpjZWFvcGlhc2J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MTAxMzYsImV4cCI6MjEwMjQ4NjEzNn0.jhKvac37D7fpQpAqMvMSi3SDlA6AxOcy6vedj7SqB3E';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let activeCategory = 'Crossbow%';
+    let currentUser = null;
+
+    // Initial Setup
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      currentUser = user;
+      
+      if (user) {
+        document.getElementById('auth-section').innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-semibold text-emerald-400">${user.user_metadata.full_name || 'Runner'}</span>
+            <button onclick="logout()" class="text-xs bg-red-600/80 hover:bg-red-600 px-3 py-1.5 rounded">Logout</button>
+          </div>`;
+        checkAdmin(user.id);
+      }
+      fetchLeaderboard();
+    }
+
+    async function loginWithDiscord() {
+      await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: { redirectTo: 'https://adcdes.github.io/seeddash/' }
+      });
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      window.location.reload();
+    }
+
+    function setCategory(cat) {
+      activeCategory = cat;
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        if (btn.dataset.cat === cat) {
+          btn.className = "cat-btn px-4 py-2 rounded-t text-sm font-semibold bg-emerald-600 text-white";
+        } else {
+          btn.className = "cat-btn px-4 py-2 rounded-t text-sm font-semibold text-gray-400 hover:text-white";
+        }
+      });
+      fetchLeaderboard();
+    }
+
+    async function fetchLeaderboard() {
+      const selectedVersion = document.getElementById('version-filter').value;
+      let query = supabase.from('runs').select('*').eq('status', 'approved').eq('category', activeCategory).order('time_seconds', { ascending: true });
+
+      if (selectedVersion !== 'All') {
+        query = query.eq('version', selectedVersion);
+      }
+
+      const { data: runs, error } = await query;
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = '';
+
+      if (error || !runs || runs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">No approved runs yet for this category!</td></tr>`;
+        return;
+      }
+
+      runs.forEach((run, index) => {
+        const row = document.createElement('tr');
+        row.className = "hover:bg-[#232d36]";
+        row.innerHTML = `
+          <td class="p-4 font-bold text-emerald-400">#${index + 1}</td>
+          <td class="p-4 font-medium text-white">${run.runner_name}</td>
+          <td class="p-4 font-mono text-emerald-300">${run.time_seconds}s</td>
+          <td class="p-4 text-gray-400">${run.version}</td>
+          <td class="p-4"><a href="${run.proof_url}" target="_blank" class="text-indigo-400 hover:underline">Watch Proof</a></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Modal Handling
+    function openSubmitModal() {
+      if (!currentUser) {
+        alert("Please login with Discord to submit a run.");
+        return;
+      }
+      document.getElementById('submit-modal').classList.remove('hidden');
+    }
+
+    function closeSubmitModal() {
+      document.getElementById('submit-modal').classList.add('hidden');
+    }
+
+    async function submitRun(e) {
+      e.preventDefault();
+      const runner = document.getElementById('run-runner').value;
+      const category = document.getElementById('run-category').value;
+      const version = document.getElementById('run-version').value;
+      const time = parseFloat(document.getElementById('run-time').value);
+      const proof = document.getElementById('run-proof').value;
+
+      const { error } = await supabase.from('runs').insert([{
+        user_id: currentUser.id,
+        runner_name: runner,
+        category: category,
+        version: version,
+        time_seconds: time,
+        proof_url: proof
+      }]);
+
+      if (error) {
+        alert("Submission failed: " + error.message);
+      } else {
+        alert("Run submitted! It will appear on the leaderboard once an admin approves it.");
+        closeSubmitModal();
+      }
+    }
+
+    // Admin Functions
+    async function checkAdmin(userId) {
+      const { data } = await supabase.from('profiles').select('is_admin').eq('id', userId).single();
+      if (data && data.is_admin) {
+        document.getElementById('admin-panel').classList.remove('hidden');
+        loadPendingRuns();
+      }
+    }
+
+    async function loadPendingRuns() {
+      const { data: pending } = await supabase.from('runs').select('*').eq('status', 'pending');
+      const container = document.getElementById('pending-runs');
+      container.innerHTML = '';
+
+      if (!pending || pending.length === 0) {
+        container.innerHTML = `<p class="text-gray-400 text-xs">No runs waiting for verification.</p>`;
+        return;
+      }
+
+      pending.forEach(run => {
+        const item = document.createElement('div');
+        item.className = "flex justify-between items-center bg-[#12181d] p-3 rounded border border-gray-800";
+        item.innerHTML = `
+          <div>
+            <p><strong class="text-white">${run.runner_name}</strong> - ${run.category} (${run.version}) in <span class="text-emerald-400">${run.time_seconds}s</span></p>
+            <a href="${run.proof_url}" target="_blank" class="text-xs text-indigo-400 hover:underline">Review Video Proof</a>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="updateRunStatus('${run.id}', 'approved')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded">Approve</button>
+            <button onclick="updateRunStatus('${run.id}', 'rejected')" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1 rounded">Reject</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    async function updateRunStatus(id, status) {
+      await supabase.from('runs').update({ status: status }).eq('id', id);
+      loadPendingRuns();
+      fetchLeaderboard();
+    }
+
+    init();
+  </script>
+</body>
+</html>
