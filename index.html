@@ -690,14 +690,23 @@
     }
 
     async function moderateRun(runId, status) {
-      await dbClient.from('runs').update({ status: status }).eq('id', runId);
-      
+      const { error: updateError } = await dbClient
+        .from('runs')
+        .update({ status: status })
+        .eq('id', runId);
+
+      if (updateError) {
+        alert("Error updating run status: " + updateError.message);
+        return;
+      }
+
       await dbClient.from('audit_logs').insert([{
         user_id: currentUser.id,
         action_type: status === 'approved' ? 'VERIFY' : 'REJECT',
         details: `Admin ${status} run ID: ${runId}`
       }]);
 
+      alert(`Run marked as ${status}!`);
       loadAdminPendingQueue();
       fetchLeaderboard();
       fetchHomeRecent();
@@ -707,7 +716,16 @@
     async function revokeRun(runId) {
       if(!confirm("Are you sure you want to revoke this verified run?")) return;
 
-      await dbClient.from('runs').update({ status: 'rejected' }).eq('id', runId);
+      const { error: updateError } = await dbClient
+        .from('runs')
+        .update({ status: 'rejected' })
+        .eq('id', runId);
+
+      if (updateError) {
+        alert("Error revoking run: " + updateError.message);
+        return;
+      }
+
       await dbClient.from('audit_logs').insert([{
         user_id: currentUser.id,
         action_type: 'REVOKE',
