@@ -298,6 +298,10 @@
           </select>
         </div>
         <div class="form-group">
+          <label>World Seed</label>
+          <input type="text" id="form-seed" placeholder="e.g. -83294829341029 (Optional for RSG)">
+        </div>
+        <div class="form-group">
           <label>Version Range *</label>
           <select id="form-version-range">
             <option value="Pre 1.8">Pre 1.8</option>
@@ -521,6 +525,7 @@
       const runner = document.getElementById('form-runner-name').value;
       const category = document.getElementById('form-category').value;
       const seedType = document.getElementById('form-seed-type').value;
+      const seedVal = document.getElementById('form-seed').value || 'N/A';
       const versionRange = document.getElementById('form-version-range').value;
       
       const igtSec = parseToSeconds(
@@ -548,6 +553,7 @@
         runner_name: runner,
         category: category,
         seed_type: seedType,
+        seed: seedVal,
         version_range: versionRange,
         igt_seconds: igtSec,
         time_seconds: realTimeSec,
