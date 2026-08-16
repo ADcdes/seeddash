@@ -84,10 +84,9 @@
     .btn-danger { background: #ef4444; color: #fff; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
 
     /* Profile Card */
-    .profile-header { display: flex; items-center; gap: 1rem; }
-    .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--border-color); object-fit: cover; }
+    .profile-header { display: flex; align-items: center; gap: 1rem; }
+    .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--border-color); object-fit: cover; border: 2px solid var(--accent-green); }
 
-    /* Responsive adjustments */
     @media (max-width: 768px) {
       header { flex-direction: column; align-items: stretch; }
       nav { justify-content: space-between; }
@@ -136,7 +135,7 @@
 
         <div class="card">
           <h3 style="margin-bottom:0.8rem; color:#fff;">📜 Activity Feed</h3>
-          <div id="social-audit-feed" style="font-size: 0.8rem; space-y-2; color: var(--text-muted);">
+          <div id="social-audit-feed" style="font-size: 0.8rem; color: var(--text-muted);">
             <p>Loading activity logs...</p>
           </div>
         </div>
@@ -232,7 +231,7 @@
             <option value="REVOKE">Revocations</option>
           </select>
         </div>
-        <div id="admin-audit-container" style="background:var(--bg-input); padding:0.8rem; border-radius:4px; max-height:200px; overflow-y:auto; font-size:0.8rem; font-mono:true;">
+        <div id="admin-audit-container" style="background:var(--bg-input); padding:0.8rem; border-radius:4px; max-height:200px; overflow-y:auto; font-size:0.8rem;">
           <!-- Audit Logs -->
         </div>
       </div>
@@ -259,8 +258,8 @@
             <input type="text" id="edit-screenname" placeholder="Speedrunner Tag">
           </div>
           <div class="form-group">
-            <label>Avatar Image URL</label>
-            <input type="url" id="edit-avatar" placeholder="https://i.imgur.com/...png">
+            <label>Upload Profile Picture (File)</label>
+            <input type="file" id="edit-avatar-file" accept="image/*" style="padding:0.3rem;">
           </div>
           <div class="form-group">
             <label>Bio</label>
@@ -272,13 +271,12 @@
     </section>
   </main>
 
-  <!-- FULL SPEEDRUN SUBMISSION MODAL -->
+  <!-- SUBMISSION MODAL -->
   <div id="submit-modal" class="modal-overlay">
     <div class="modal">
       <h3 style="font-family: var(--font-pixel); font-size: 0.9rem; color:#fff; margin-bottom: 1rem;">Submit Speedrun</h3>
       
       <form onsubmit="handleRunSubmit(event)">
-        <!-- Categorization -->
         <div class="section-title">📂 Categorization</div>
         <div class="form-group">
           <label>Category *</label>
@@ -311,14 +309,12 @@
           </select>
         </div>
 
-        <!-- Players -->
         <div class="section-title">👤 Players</div>
         <div class="form-group">
           <label>Player 1 *</label>
           <input type="text" id="form-runner-name" required placeholder="Your runner name">
         </div>
 
-        <!-- Run Times -->
         <div class="section-title">⏱️ Run Times</div>
         <div class="form-group">
           <label>In-Game Time (IGT)</label>
@@ -339,14 +335,12 @@
           </div>
         </div>
 
-        <!-- Video -->
         <div class="section-title">📹 Video Proof</div>
         <div class="form-group">
           <label>Video URL *</label>
           <input type="url" id="form-proof-url" required placeholder="https://youtube.com/watch?v=...">
         </div>
 
-        <!-- Other details -->
         <div class="section-title">🏷️ Other Details</div>
         <div class="form-group">
           <label>Difficulty</label>
@@ -394,18 +388,27 @@
     let activeSeedType = 'Random Seed';
     let currentUser = null;
     let isAdminUser = false;
+    let base64Avatar = null;
 
     async function init() {
-      const { data: { user } } = await dbClient.auth.getUser();
-      currentUser = user;
+      // Monitor auth state changes dynamically
+      dbClient.auth.onAuthStateChange(async (event, session) => {
+        currentUser = session?.user || null;
 
-      if (user) {
-        document.getElementById('auth-container').innerHTML = `
-          <button onclick="logout()" class="nav-btn" style="background:#ef4444; color:#fff;">Logout</button>
-        `;
-        loadUserProfile(user.id);
-        checkAdminRole(user.id);
-      }
+        if (currentUser) {
+          document.getElementById('auth-container').innerHTML = `
+            <button onclick="logout()" class="nav-btn" style="background:#ef4444; color:#fff;">Logout</button>
+          `;
+          await syncProfile(currentUser);
+          await checkAdminRole(currentUser.id);
+        } else {
+          document.getElementById('auth-container').innerHTML = `
+            <button onclick="loginWithDiscord()" class="nav-btn" style="background:#5865F2; color:#fff;">Login Discord</button>
+          `;
+          document.getElementById('admin-panel').style.display = 'none';
+        }
+      });
+
       fetchLeaderboard();
       fetchHomeRecent();
       fetchAuditFeed();
@@ -417,9 +420,10 @@
     }
 
     async function loginWithDiscord() {
+      const currentUrl = window.location.origin + window.location.pathname;
       await dbClient.auth.signInWithOAuth({
         provider: 'discord',
-        options: { redirectTo: 'https://adcdes.github.io/seeddash/' }
+        options: { redirectTo: currentUrl }
       });
     }
 
@@ -443,12 +447,10 @@
       fetchLeaderboard();
     }
 
-    // Convert time components into total seconds
     function parseToSeconds(h, m, s, ms) {
       return (parseInt(h||0)*3600) + (parseInt(m||0)*60) + parseInt(s||0) + (parseInt(ms||0)/1000);
     }
 
-    // Format seconds into digital display (e.g., 6m 50s 359ms)
     function formatDigitalTime(totalSec) {
       if(!totalSec) return 'N/A';
       const h = Math.floor(totalSec / 3600);
@@ -490,7 +492,6 @@
       runs.forEach((run, index) => {
         let rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
         let dateStr = new Date(run.created_at).toLocaleDateString();
-
         let revokeBtn = isAdminUser ? `<button onclick="revokeRun('${run.id}')" class="btn-danger" style="margin-left:0.4rem;">Revoke</button>` : '';
 
         tbody.innerHTML += `
@@ -561,7 +562,6 @@
       if (error) {
         alert("Error: " + error.message);
       } else {
-        // Log activity
         await dbClient.from('audit_logs').insert([{
           user_id: currentUser.id,
           action_type: 'SUBMIT',
@@ -583,40 +583,70 @@
       document.getElementById('submit-modal').classList.remove('active');
     }
 
-    // User Profile Logic
-    async function loadUserProfile(userId) {
-      const { data } = await dbClient.from('profiles').select('*').eq('id', userId).single();
-      if (data) {
-        document.getElementById('profile-display-name').innerText = data.screen_name || data.username || 'Runner';
-        document.getElementById('profile-display-screenname').innerText = `@${data.username || 'runner'}`;
-        document.getElementById('profile-display-bio').innerText = data.bio || 'No bio written yet.';
-        if(data.avatar_url) document.getElementById('profile-display-avatar').src = data.avatar_url;
+    // Profile Management & File Reader
+    async function syncProfile(user) {
+      let { data: profile } = await dbClient.from('profiles').select('*').eq('id', user.id).single();
 
-        document.getElementById('edit-screenname').value = data.screen_name || '';
-        document.getElementById('edit-avatar').value = data.avatar_url || '';
-        document.getElementById('edit-bio').value = data.bio || '';
+      // Create fallback profile entry if missing
+      if (!profile) {
+        const username = user.user_metadata?.full_name || user.user_metadata?.name || 'Runner';
+        const avatar = user.user_metadata?.avatar_url || '';
+        const { data: newProf } = await dbClient.from('profiles').insert([{ id: user.id, username: username, avatar_url: avatar }]).select().single();
+        profile = newProf;
+      }
+
+      if (profile) {
+        document.getElementById('profile-display-name').innerText = profile.screen_name || profile.username || 'Runner';
+        document.getElementById('profile-display-screenname').innerText = `@${profile.username || 'runner'}`;
+        document.getElementById('profile-display-bio').innerText = profile.bio || 'No bio set.';
+        if(profile.avatar_url) {
+          document.getElementById('profile-display-avatar').src = profile.avatar_url;
+        }
+        document.getElementById('edit-screenname').value = profile.screen_name || '';
+        document.getElementById('edit-bio').value = profile.bio || '';
       }
     }
+
+    // Handle Image Upload Conversion
+    document.getElementById('edit-avatar-file').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          base64Avatar = evt.target.result;
+          document.getElementById('profile-display-avatar').src = base64Avatar;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
 
     async function saveProfileSettings(e) {
       e.preventDefault();
+      if (!currentUser) return;
+
       const screenName = document.getElementById('edit-screenname').value;
-      const avatarUrl = document.getElementById('edit-avatar').value;
       const bio = document.getElementById('edit-bio').value;
 
-      const { error } = await dbClient.from('profiles').update({
+      const updatePayload = {
         screen_name: screenName,
-        avatar_url: avatarUrl,
         bio: bio
-      }).eq('id', currentUser.id);
+      };
+
+      if (base64Avatar) {
+        updatePayload.avatar_url = base64Avatar;
+      }
+
+      const { error } = await dbClient.from('profiles').update(updatePayload).eq('id', currentUser.id);
 
       if(!error) {
-        alert("Profile updated!");
-        loadUserProfile(currentUser.id);
+        alert("Profile settings updated!");
+        syncProfile(currentUser);
+      } else {
+        alert("Error saving profile: " + error.message);
       }
     }
 
-    // Admin & Moderation Queue
+    // Admin Panel Actions
     async function checkAdminRole(userId) {
       const { data } = await dbClient.from('profiles').select('is_admin').eq('id', userId).single();
       if (data && data.is_admin) {
