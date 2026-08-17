@@ -6,91 +6,200 @@
   <title>SeedDash - Speedrun Leaderboards</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
+
   <style>
     :root {
-      --bg-main: #0c1a10;
-      --bg-header: #10b981;
-      --bg-card: #132618;
-      --bg-card-alt: #18301e;
-      --bg-input: #09140c;
-      --accent-green: #22c55e;
-      --accent-green-hover: #16a34a;
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --border-color: #1f3d27;
-      --font-pixel: 'Press Start 2P', monospace;
+      --bg-page: #0a0d0c;
+      --bg-sidebar: #0d1210;
+      --bg-panel: #121715;
+      --bg-panel-alt: #171d1a;
+      --bg-input: #0a0f0d;
+      --accent: #34d399;
+      --accent-dim: #1e7a55;
+      --accent-hover: #2bb783;
+      --gold: #eab308;
+      --silver: #cbd5e1;
+      --bronze: #c2703d;
+      --text-main: #eef1ef;
+      --text-muted: #7d8b85;
+      --text-faint: #4d5852;
+      --border: #202823;
+      --border-bright: #2c3a33;
+      --font-display: 'Press Start 2P', monospace;
       --font-body: 'Space Grotesk', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius: 6px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: var(--bg-main); color: var(--text-main); font-family: var(--font-body); line-height: 1.5; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg-page); color: var(--text-main); font-family: var(--font-body); line-height: 1.5; font-size: 15px; }
+    button, input, select, textarea { font-family: inherit; }
+    a { color: inherit; }
+    ::selection { background: var(--accent-dim); color: #fff; }
 
-    /* Header */
-    header { background: var(--bg-header); padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
-    .logo { font-family: var(--font-pixel); color: #000; font-size: 1rem; text-decoration: none; font-weight: bold; }
-    nav { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-    nav button, .nav-btn { background: rgba(0,0,0,0.15); border: none; color: #000; font-size: 0.85rem; font-weight: 700; cursor: pointer; padding: 0.5rem 0.8rem; border-radius: 4px; transition: 0.2s; }
-    nav button:hover, .nav-btn:hover { background: rgba(0,0,0,0.3); color: #fff; }
+    /* ---------- Header ---------- */
+    header {
+      background: var(--bg-sidebar);
+      border-bottom: 1px solid var(--border);
+      padding: 0.7rem 1.25rem;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+    .logo-mark {
+      font-family: var(--font-display); font-size: 0.7rem; color: #06120c;
+      background: var(--accent); padding: 0.4rem 0.5rem; border-radius: 4px; line-height: 1;
+    }
+    .logo-word { font-weight: 700; font-size: 1rem; color: var(--text-main); letter-spacing: 0.02em; }
+    nav { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+    .nav-btn {
+      background: transparent; border: 1px solid transparent; color: var(--text-muted);
+      font-size: 0.82rem; font-weight: 600; cursor: pointer; padding: 0.5rem 0.85rem;
+      border-radius: var(--radius); transition: 0.15s;
+    }
+    .nav-btn:hover { color: var(--text-main); background: var(--bg-panel-alt); }
+    .nav-btn.primary { background: var(--accent); color: #06120c; }
+    .nav-btn.primary:hover { background: var(--accent-hover); }
+    .nav-btn.danger-outline { color: #f87171; }
+    .nav-btn.danger-outline:hover { background: rgba(248,113,113,0.1); }
 
-    /* App Container */
-    main { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
+    /* ---------- Layout ---------- */
+    main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
     .view-section { display: none; }
     .view-section.active { display: block; }
 
-    .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem; }
-    
-    /* Minecraft Board Style */
-    .game-banner { background: linear-gradient(to right, #16301d, #0d1f12); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
-    .game-title { font-size: 1.4rem; font-weight: 700; color: #fff; }
+    .card {
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem;
+    }
 
-    /* Category & Filter Tabs */
-    .cat-tabs { display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 0.8rem; border-bottom: 1px solid var(--border-color); }
-    .cat-tab { background: #193621; color: var(--text-muted); border: none; padding: 0.5rem 1rem; border-radius: 4px 4px 0 0; font-weight: 600; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
-    .cat-tab.active { background: var(--accent-green); color: #fff; }
+    /* ---------- Home ---------- */
+    .hero {
+      background: linear-gradient(160deg, #10221b, #0a0d0c 70%);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 2.25rem 1.5rem; margin-bottom: 1.5rem; text-align: center;
+    }
+    .hero-eyebrow { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.6rem; }
+    .hero h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .hero p { color: var(--text-muted); font-size: 0.9rem; max-width: 44ch; margin: 0 auto; }
 
-    .sub-filters { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; background: #0f2114; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; }
-    .seed-toggle { display: flex; background: var(--bg-input); border-radius: 4px; padding: 2px; }
-    .seed-btn { background: none; border: none; color: var(--text-muted); padding: 0.3rem 0.8rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; border-radius: 3px; }
-    .seed-btn.active { background: var(--accent-green); color: #fff; }
+    .home-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.25rem; }
+    .panel-title { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; font-size: 0.95rem; }
+    .panel-title .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 
-    /* Table Styles */
-    .table-container { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
-    th { background: #09140c; padding: 0.75rem 0.8rem; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-    td { padding: 0.75rem 0.8rem; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-    tr:hover { background: var(--bg-card-alt); }
+    .feed-item { padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; color: var(--text-muted); }
+    .feed-item:last-child { border-bottom: none; }
 
-    .rank-1 { color: #f59e0b; font-weight: bold; }
-    .rank-2 { color: #94a3b8; font-weight: bold; }
-    .rank-3 { color: #b45309; font-weight: bold; }
+    /* ---------- Leaderboard layout: sidebar + content ---------- */
+    .lb-shell { display: grid; grid-template-columns: 220px 1fr; gap: 1.25rem; align-items: start; }
 
-    /* Forms & Modals */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 2rem 1rem; z-index: 100; }
+    .game-banner {
+      background: linear-gradient(120deg, #142a20, #0d1512);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 1.1rem 1.4rem; display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.1rem; grid-column: 1 / -1;
+    }
+    .game-title { font-size: 1.15rem; font-weight: 700; }
+    .game-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+    .cat-sidebar {
+      background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.6rem; position: sticky; top: 4.5rem;
+    }
+    .cat-sidebar-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; padding: 0.5rem 0.6rem 0.3rem; }
+    .cat-item {
+      display: block; width: 100%; text-align: left; background: none; border: none;
+      color: var(--text-muted); font-size: 0.83rem; font-weight: 600; padding: 0.55rem 0.6rem;
+      border-radius: 5px; cursor: pointer; border-left: 2px solid transparent; margin-bottom: 2px;
+    }
+    .cat-item:hover { background: var(--bg-panel-alt); color: var(--text-main); }
+    .cat-item.active { background: rgba(52,211,153,0.1); color: var(--accent); border-left-color: var(--accent); }
+
+    .lb-main { min-width: 0; }
+
+    .sub-filters {
+      display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap;
+      background: var(--bg-panel); border: 1px solid var(--border);
+      padding: 0.7rem 0.9rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.83rem;
+    }
+    .filter-label { color: var(--text-faint); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 0.5rem; }
+    .seed-toggle { display: inline-flex; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 2px; }
+    .seed-btn { background: none; border: none; color: var(--text-muted); padding: 0.4rem 0.85rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; border-radius: 4px; }
+    .seed-btn.active { background: var(--accent); color: #06120c; }
+    select.filter-select { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border); padding: 0.45rem 0.6rem; border-radius: 6px; font-size: 0.8rem; }
+
+    /* ---------- Table ---------- */
+    .table-container { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.84rem; }
+    th {
+      background: var(--bg-sidebar); padding: 0.7rem 0.85rem; color: var(--text-faint);
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border); white-space: nowrap; font-weight: 600;
+    }
+    td { padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border); white-space: nowrap; background: var(--bg-panel); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-panel-alt); }
+
+    .rank-cell { display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-weight: 700; }
+    .medal { font-size: 0.95rem; }
+    .rank-1 { color: var(--gold); }
+    .rank-2 { color: var(--silver); }
+    .rank-3 { color: var(--bronze); }
+
+    .time-cell { font-family: var(--font-mono); font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .igt-cell { font-family: var(--font-mono); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .pill { display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--bg-panel-alt); color: var(--text-muted); border: 1px solid var(--border); }
+    .proof-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .proof-link:hover { text-decoration: underline; }
+
+    /* ---------- Forms & Modals ---------- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(4,8,6,0.88); display: none; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 3rem 1rem; z-index: 100; }
     .modal-overlay.active { display: flex; }
-    .modal { background: var(--bg-card); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 8px; width: 100%; max-width: 650px; }
-    
-    .section-title { font-size: 1rem; font-weight: 700; color: #fff; margin: 1.2rem 0 0.6rem 0; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3rem; display: flex; align-items: center; gap: 0.4rem; }
-    .form-group { margin-bottom: 0.8rem; }
-    .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: 600; }
-    .form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); color: #fff; padding: 0.55rem; border-radius: 4px; font-family: inherit; font-size: 0.85rem; }
-    
+    .modal { background: var(--bg-panel); border: 1px solid var(--border-bright); padding: 1.6rem; border-radius: 10px; width: 100%; max-width: 640px; }
+    .modal h3 { font-weight: 700; font-size: 1.05rem; margin-bottom: 1.1rem; }
+
+    .section-title { font-size: 0.78rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; margin: 1.3rem 0 0.7rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+    .section-title:first-of-type { margin-top: 0; }
+    .form-group { margin-bottom: 0.85rem; }
+    .form-group label { display: block; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.3rem; font-weight: 600; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+      color: var(--text-main); padding: 0.6rem 0.65rem; border-radius: 6px; font-size: 0.85rem;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
+
     .time-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
-    
-    .btn-submit { background: var(--accent-green); color: #fff; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; font-weight: 700; cursor: pointer; }
-    .btn-submit:hover { background: var(--accent-green-hover); }
-    .btn-danger { background: #ef4444; color: #fff; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
 
-    /* Profile Card */
-    .profile-header { display: flex; align-items: center; gap: 1rem; }
-    .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--border-color); object-fit: cover; border: 2px solid var(--accent-green); }
+    .btn-submit { background: var(--accent); color: #06120c; border: none; padding: 0.65rem 1.3rem; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
+    .btn-submit:hover { background: var(--accent-hover); }
+    .btn-danger { background: transparent; border: 1px solid #f87171; color: #f87171; padding: 0.3rem 0.65rem; border-radius: 5px; font-size: 0.72rem; cursor: pointer; font-weight: 600; }
+    .btn-danger:hover { background: rgba(248,113,113,0.12); }
 
+    /* ---------- Profile ---------- */
+    .profile-header { display: flex; align-items: center; gap: 1.1rem; }
+    .profile-avatar { width: 68px; height: 68px; border-radius: 50%; background: var(--border); object-fit: cover; border: 2px solid var(--accent); }
+
+    /* ---------- Admin panel ---------- */
+    #admin-panel { border: 1px solid rgba(234,179,8,0.35); margin-top: 2rem; }
+    #admin-panel .panel-title { color: var(--gold); }
+    .admin-row {
+      background: var(--bg-input); padding: 0.85rem; border-radius: 6px; margin-bottom: 0.5rem;
+      border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+
+    @media (max-width: 900px) {
+      .lb-shell { grid-template-columns: 1fr; }
+      .cat-sidebar { position: static; display: flex; overflow-x: auto; gap: 0.3rem; padding: 0.5rem; }
+      .cat-sidebar-label { display: none; }
+      .cat-item { white-space: nowrap; width: auto; }
+    }
     @media (max-width: 768px) {
       header { flex-direction: column; align-items: stretch; }
       nav { justify-content: space-between; }
-      .home-grid { grid-template-columns: 1fr !important; }
+      .home-grid { grid-template-columns: 1fr; }
       .time-inputs { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
@@ -98,12 +207,15 @@
 <body>
 
   <header>
-    <a href="#" onclick="switchTab('home')" class="logo">🏆 SEEDDASH</a>
+    <a href="#" onclick="switchTab('home')" class="logo">
+      <span class="logo-mark">SD</span>
+      <span class="logo-word">SEEDDASH</span>
+    </a>
     <nav>
       <button onclick="switchTab('home')" class="nav-btn">Home</button>
       <button onclick="switchTab('leaderboard')" class="nav-btn">Leaderboards</button>
       <button onclick="switchTab('profile')" class="nav-btn">Profile</button>
-      <button onclick="openSubmitModal()" class="nav-btn" style="background:#000; color:#fff;">+ Submit Run</button>
+      <button onclick="openSubmitModal()" class="nav-btn primary">+ Submit Run</button>
       <div id="auth-container" style="display:inline-block;">
         <button onclick="loginWithDiscord()" class="nav-btn" style="background:#5865F2; color:#fff;">Login Discord</button>
       </div>
@@ -113,14 +225,15 @@
   <main>
     <!-- HOME PAGE -->
     <section id="view-home" class="view-section active">
-      <div class="card" style="text-align: center; padding: 2rem;">
-        <h1 style="font-family: var(--font-pixel); font-size: 1.2rem; margin-bottom: 0.8rem; color: var(--accent-green);">SEEDDASH SPEEDRUNNING</h1>
-        <p style="color: var(--text-muted); font-size: 0.9rem;">Community speedrun hub for Minecraft Java seed-based & custom rulesets.</p>
+      <div class="hero">
+        <div class="hero-eyebrow">Community Speedrun Hub</div>
+        <h1>SeedDash Speedrunning</h1>
+        <p>Verified leaderboards for Minecraft Java, split by seed type, version range, and category.</p>
       </div>
 
-      <div class="home-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+      <div class="home-grid">
         <div class="card">
-          <h3 style="margin-bottom:0.8rem; color:#fff;">⚡ Verified Recent Runs</h3>
+          <div class="panel-title"><span class="dot"></span>Verified Recent Runs</div>
           <div class="table-container">
             <table>
               <thead>
@@ -134,9 +247,9 @@
         </div>
 
         <div class="card">
-          <h3 style="margin-bottom:0.8rem; color:#fff;">📜 Activity Feed</h3>
-          <div id="social-audit-feed" style="font-size: 0.8rem; color: var(--text-muted);">
-            <p>Loading activity logs...</p>
+          <div class="panel-title"><span class="dot"></span>Activity Feed</div>
+          <div id="social-audit-feed">
+            <p style="color:var(--text-muted); font-size:0.85rem;">Loading activity logs...</p>
           </div>
         </div>
       </div>
@@ -144,95 +257,98 @@
 
     <!-- LEADERBOARDS PAGE -->
     <section id="view-leaderboard" class="view-section">
-      <div class="game-banner">
-        <div>
-          <div class="game-title">Minecraft: Java Edition</div>
-          <p style="font-size:0.8rem; color:var(--text-muted);">Leaderboards & Seed Extensions</p>
-        </div>
-        <button onclick="openSubmitModal()" class="btn-submit">+ Submit Run</button>
-      </div>
-
-      <!-- Categories -->
-      <div class="cat-tabs" id="category-tabs-bar">
-        <button onclick="setCategory('Any% Glitchless')" class="cat-tab active" data-cat="Any% Glitchless">Any% Glitchless</button>
-        <button onclick="setCategory('Any%')" class="cat-tab" data-cat="Any%">Any%</button>
-        <button onclick="setCategory('All Advancements')" class="cat-tab" data-cat="All Advancements">All Advancements</button>
-        <button onclick="setCategory('Any% Glitchless Co-Op')" class="cat-tab" data-cat="Any% Glitchless Co-Op">Any% Glitchless Co-Op</button>
-        <button onclick="setCategory('All Advancements Co-Op')" class="cat-tab" data-cat="All Advancements Co-Op">All Advancements Co-Op</button>
-        <button onclick="setCategory('Any% Peaceful')" class="cat-tab" data-cat="Any% Peaceful">Any% Peaceful</button>
-        <button onclick="setCategory('Crossbow%')" class="cat-tab" data-cat="Crossbow%">Crossbow%</button>
-      </div>
-
-      <!-- Sub Filters -->
-      <div class="sub-filters">
-        <div>
-          <span style="color:var(--text-muted); margin-right: 0.4rem;">Seed Type:</span>
-          <span class="seed-toggle">
-            <button onclick="setSeedType('Random Seed')" id="btn-random-seed" class="seed-btn active">Random Seed</button>
-            <button onclick="setSeedType('Set Seed')" id="btn-set-seed" class="seed-btn">Set Seed</button>
-          </span>
+      <div class="lb-shell">
+        <div class="game-banner">
+          <div>
+            <div class="game-title">Minecraft: Java Edition</div>
+            <div class="game-sub">Leaderboards &amp; Seed Extensions</div>
+          </div>
+          <button onclick="openSubmitModal()" class="btn-submit">+ Submit Run</button>
         </div>
 
-        <div>
-          <span style="color:var(--text-muted); margin-right: 0.4rem;">Version Range:</span>
-          <select id="version-range-filter" onchange="fetchLeaderboard()" style="background:var(--bg-input); color:#fff; border:1px solid var(--border-color); padding:0.3rem; border-radius:4px;">
-            <option value="All">All Ranges</option>
-            <option value="Pre 1.8">Pre 1.8</option>
-            <option value="1.8">1.8</option>
-            <option value="1.9-1.12">1.9-1.12</option>
-            <option value="1.13-1.15">1.13-1.15</option>
-            <option value="1.16-1.19" selected>1.16-1.19</option>
-            <option value="1.20+">1.20+</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Table -->
-      <div class="card" style="padding:0; overflow:hidden;">
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Player</th>
-                <th>IGT</th>
-                <th>Time</th>
-                <th>Date</th>
-                <th>Version</th>
-                <th>Difficulty</th>
-                <th>F3</th>
-                <th>Mods</th>
-                <th>Proof / Action</th>
-              </tr>
-            </thead>
-            <tbody id="leaderboard-tbody">
-              <!-- Dynamically Populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ADMIN MODERATION PANEL -->
-      <div id="admin-panel" class="card" style="display:none; border: 1px solid #f59e0b; margin-top: 2rem;">
-        <h3 style="color:#f59e0b; margin-bottom: 1rem;">🛡️ Admin & Moderator Dashboard</h3>
-        
-        <h4 class="section-title">Pending Verification Queue</h4>
-        <div id="admin-pending-list" style="margin-bottom: 1.5rem;">
-          <p style="color:var(--text-muted); font-size:0.85rem;">No pending runs in queue.</p>
+        <!-- Category sidebar -->
+        <div class="cat-sidebar" id="category-tabs-bar">
+          <div class="cat-sidebar-label">Categories</div>
+          <button onclick="setCategory('Any% Glitchless')" class="cat-item active" data-cat="Any% Glitchless">Any% Glitchless</button>
+          <button onclick="setCategory('Any%')" class="cat-item" data-cat="Any%">Any%</button>
+          <button onclick="setCategory('All Advancements')" class="cat-item" data-cat="All Advancements">All Advancements</button>
+          <button onclick="setCategory('Any% Glitchless Co-Op')" class="cat-item" data-cat="Any% Glitchless Co-Op">Any% Glitchless Co-Op</button>
+          <button onclick="setCategory('All Advancements Co-Op')" class="cat-item" data-cat="All Advancements Co-Op">All Advancements Co-Op</button>
+          <button onclick="setCategory('Any% Peaceful')" class="cat-item" data-cat="Any% Peaceful">Any% Peaceful</button>
+          <button onclick="setCategory('Crossbow%')" class="cat-item" data-cat="Crossbow%">Crossbow%</button>
         </div>
 
-        <h4 class="section-title">Audit Log System</h4>
-        <div style="margin-bottom: 0.8rem; display:flex; gap:0.5rem; align-items:center;">
-          <label style="font-size:0.8rem; color:var(--text-muted);">Filter Action:</label>
-          <select id="audit-filter" onchange="loadAdminAuditLogs()" style="background:var(--bg-input); color:#fff; border:1px solid var(--border-color); padding:0.2rem 0.5rem; border-radius:4px; font-size:0.8rem;">
-            <option value="ALL">All Actions</option>
-            <option value="SUBMIT">Submissions</option>
-            <option value="VERIFY">Verifications</option>
-            <option value="REVOKE">Revocations</option>
-          </select>
-        </div>
-        <div id="admin-audit-container" style="background:var(--bg-input); padding:0.8rem; border-radius:4px; max-height:200px; overflow-y:auto; font-size:0.8rem;">
-          <!-- Audit Logs -->
+        <div class="lb-main">
+          <!-- Sub Filters -->
+          <div class="sub-filters">
+            <div>
+              <span class="filter-label">Seed Type</span>
+              <span class="seed-toggle">
+                <button onclick="setSeedType('Random Seed')" id="btn-random-seed" class="seed-btn active">Random Seed</button>
+                <button onclick="setSeedType('Set Seed')" id="btn-set-seed" class="seed-btn">Set Seed</button>
+              </span>
+            </div>
+
+            <div>
+              <span class="filter-label">Version Range</span>
+              <select id="version-range-filter" onchange="fetchLeaderboard()" class="filter-select">
+                <option value="All">All Ranges</option>
+                <option value="Pre 1.8">Pre 1.8</option>
+                <option value="1.8">1.8</option>
+                <option value="1.9-1.12">1.9-1.12</option>
+                <option value="1.13-1.15">1.13-1.15</option>
+                <option value="1.16-1.19" selected>1.16-1.19</option>
+                <option value="1.20+">1.20+</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Player</th>
+                  <th>IGT</th>
+                  <th>Time</th>
+                  <th>Date</th>
+                  <th>Version</th>
+                  <th>Difficulty</th>
+                  <th>F3</th>
+                  <th>Mods</th>
+                  <th>Proof / Action</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-tbody">
+                <!-- Dynamically Populated -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ADMIN MODERATION PANEL -->
+          <div id="admin-panel" class="card" style="display:none;">
+            <div class="panel-title">🛡️ Admin &amp; Moderator Dashboard</div>
+
+            <h4 class="section-title">Pending Verification Queue</h4>
+            <div id="admin-pending-list" style="margin-bottom: 1.5rem;">
+              <p style="color:var(--text-muted); font-size:0.85rem;">No pending runs in queue.</p>
+            </div>
+
+            <h4 class="section-title">Audit Log System</h4>
+            <div style="margin-bottom: 0.8rem; display:flex; gap:0.5rem; align-items:center;">
+              <label style="font-size:0.8rem; color:var(--text-muted);">Filter Action:</label>
+              <select id="audit-filter" onchange="loadAdminAuditLogs()" class="filter-select">
+                <option value="ALL">All Actions</option>
+                <option value="SUBMIT">Submissions</option>
+                <option value="VERIFY">Verifications</option>
+                <option value="REVOKE">Revocations</option>
+              </select>
+            </div>
+            <div id="admin-audit-container" style="background:var(--bg-input); padding:0.8rem; border-radius:6px; max-height:200px; overflow-y:auto; font-size:0.8rem; border:1px solid var(--border);">
+              <!-- Audit Logs -->
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -241,17 +357,17 @@
     <section id="view-profile" class="view-section">
       <div class="card">
         <div class="profile-header">
-          <img id="profile-display-avatar" src="https://via.placeholder.com/64" class="profile-avatar">
+          <img id="profile-display-avatar" src="https://via.placeholder.com/68" class="profile-avatar">
           <div>
-            <h2 id="profile-display-name" style="color:#fff;">Guest User</h2>
-            <p id="profile-display-screenname" style="color:var(--accent-green); font-size:0.85rem;">@guest</p>
+            <h2 id="profile-display-name" style="color:var(--text-main);">Guest User</h2>
+            <p id="profile-display-screenname" style="color:var(--accent); font-size:0.85rem;">@guest</p>
             <p id="profile-display-bio" style="color:var(--text-muted); font-size:0.85rem; margin-top:0.3rem;">No bio set.</p>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <h3 style="margin-bottom: 1rem; color:#fff;">Edit Profile Settings</h3>
+        <div class="panel-title">Edit Profile Settings</div>
         <form onsubmit="saveProfileSettings(event)">
           <div class="form-group">
             <label>Screen Name / Display Name</label>
@@ -259,7 +375,8 @@
           </div>
           <div class="form-group">
             <label>Upload Profile Picture (File)</label>
-            <input type="file" id="edit-avatar-file" accept="image/*" style="padding:0.3rem;">
+            <input type="file" id="edit-avatar-file" accept="image/*" style="padding:0.4rem;">
+            <p id="avatar-upload-status" style="font-size:0.75rem; color:var(--text-faint); margin-top:0.3rem;"></p>
           </div>
           <div class="form-group">
             <label>Bio</label>
@@ -274,10 +391,10 @@
   <!-- SUBMISSION MODAL -->
   <div id="submit-modal" class="modal-overlay">
     <div class="modal">
-      <h3 style="font-family: var(--font-pixel); font-size: 0.9rem; color:#fff; margin-bottom: 1rem;">Submit Speedrun</h3>
-      
+      <h3>Submit Speedrun</h3>
+
       <form onsubmit="handleRunSubmit(event)">
-        <div class="section-title">📂 Categorization</div>
+        <div class="section-title">Categorization</div>
         <div class="form-group">
           <label>Category *</label>
           <select id="form-category">
@@ -313,13 +430,13 @@
           </select>
         </div>
 
-        <div class="section-title">👤 Players</div>
+        <div class="section-title">Players</div>
         <div class="form-group">
           <label>Player 1 *</label>
           <input type="text" id="form-runner-name" required placeholder="Your runner name">
         </div>
 
-        <div class="section-title">⏱️ Run Times</div>
+        <div class="section-title">Run Times</div>
         <div class="form-group">
           <label>In-Game Time (IGT)</label>
           <div class="time-inputs">
@@ -339,13 +456,13 @@
           </div>
         </div>
 
-        <div class="section-title">📹 Video Proof</div>
+        <div class="section-title">Video Proof</div>
         <div class="form-group">
           <label>Video URL *</label>
           <input type="url" id="form-proof-url" required placeholder="https://youtube.com/watch?v=...">
         </div>
 
-        <div class="section-title">🏷️ Other Details</div>
+        <div class="section-title">Other Details</div>
         <div class="form-group">
           <label>Difficulty</label>
           <select id="form-difficulty">
@@ -385,23 +502,22 @@
   <script>
     const SUPABASE_URL = 'https://rprbijuhajceaopiasbw.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwcmJpanVoYWpjZWFvcGlhc2J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MTAxMzYsImV4cCI6MjEwMjQ4NjEzNn0.jhKvac37D7fpQpAqMvMSi3SDlA6AxOcy6vedj7SqB3E';
-    
+
     const dbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let activeCategory = 'Any% Glitchless';
     let activeSeedType = 'Random Seed';
     let currentUser = null;
     let isAdminUser = false;
-    let base64Avatar = null;
+    let pendingAvatarFile = null; // holds the raw File until save, not a base64 string
 
     async function init() {
-      // Monitor auth state changes dynamically
       dbClient.auth.onAuthStateChange(async (event, session) => {
         currentUser = session?.user || null;
 
         if (currentUser) {
           document.getElementById('auth-container').innerHTML = `
-            <button onclick="logout()" class="nav-btn" style="background:#ef4444; color:#fff;">Logout</button>
+            <button onclick="logout()" class="nav-btn danger-outline">Logout</button>
           `;
           await syncProfile(currentUser);
           await checkAdminRole(currentUser.id);
@@ -409,6 +525,7 @@
           document.getElementById('auth-container').innerHTML = `
             <button onclick="loginWithDiscord()" class="nav-btn" style="background:#5865F2; color:#fff;">Login Discord</button>
           `;
+          isAdminUser = false;
           document.getElementById('admin-panel').style.display = 'none';
         }
       });
@@ -438,7 +555,7 @@
 
     function setCategory(cat) {
       activeCategory = cat;
-      document.querySelectorAll('.cat-tab').forEach(btn => {
+      document.querySelectorAll('.cat-item').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.cat === cat);
       });
       fetchLeaderboard();
@@ -461,7 +578,7 @@
       const m = Math.floor((totalSec % 3600) / 60);
       const s = Math.floor(totalSec % 60);
       const ms = Math.round((totalSec % 1) * 1000);
-      
+
       let res = '';
       if(h > 0) res += `${h}h `;
       if(m > 0 || h > 0) res += `${m}m `;
@@ -470,9 +587,16 @@
       return res;
     }
 
+    function medalFor(index) {
+      if (index === 0) return '<span class="medal">🥇</span>';
+      if (index === 1) return '<span class="medal">🥈</span>';
+      if (index === 2) return '<span class="medal">🥉</span>';
+      return '';
+    }
+
     async function fetchLeaderboard() {
       const selectedVersionRange = document.getElementById('version-range-filter').value;
-      
+
       let query = dbClient.from('runs')
         .select('*')
         .eq('status', 'approved')
@@ -484,9 +608,14 @@
         query = query.eq('version_range', selectedVersionRange);
       }
 
-      const { data: runs } = await query;
+      const { data: runs, error } = await query;
       const tbody = document.getElementById('leaderboard-tbody');
       tbody.innerHTML = '';
+
+      if (error) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#f87171; padding:2rem;">Couldn't load the leaderboard: ${error.message}</td></tr>`;
+        return;
+      }
 
       if (!runs || runs.length === 0) {
         tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:2rem;">No approved runs on board for ${activeCategory} (${activeSeedType}).</td></tr>`;
@@ -496,21 +625,21 @@
       runs.forEach((run, index) => {
         let rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
         let dateStr = new Date(run.created_at).toLocaleDateString();
-        let revokeBtn = isAdminUser ? `<button onclick="revokeRun('${run.id}')" class="btn-danger" style="margin-left:0.4rem;">Revoke</button>` : '';
+        let revokeBtn = isAdminUser ? `<button onclick="revokeRun('${run.id}')" class="btn-danger" style="margin-left:0.5rem;">Revoke</button>` : '';
 
         tbody.innerHTML += `
           <tr>
-            <td class="${rankClass}">#${index + 1}</td>
-            <td style="font-weight:600; color:#fff;">${run.runner_name}</td>
-            <td style="color:var(--text-muted);">${formatDigitalTime(run.igt_seconds)}</td>
-            <td style="font-family:monospace; color:var(--accent-green); font-weight:bold;">${formatDigitalTime(run.time_seconds)}</td>
+            <td><span class="rank-cell ${rankClass}">${medalFor(index)}#${index + 1}</span></td>
+            <td style="font-weight:600; color:var(--text-main);">${run.runner_name}</td>
+            <td class="igt-cell">${formatDigitalTime(run.igt_seconds)}</td>
+            <td class="time-cell">${formatDigitalTime(run.time_seconds)}</td>
             <td style="color:var(--text-muted); font-size:0.75rem;">${dateStr}</td>
-            <td>${run.version_range}</td>
-            <td>${run.difficulty}</td>
-            <td>${run.f3_enabled}</td>
-            <td>${run.mods}</td>
+            <td><span class="pill">${run.version_range}</span></td>
+            <td><span class="pill">${run.difficulty}</span></td>
+            <td><span class="pill">${run.f3_enabled}</span></td>
+            <td><span class="pill">${run.mods}</span></td>
             <td>
-              <a href="${run.proof_url}" target="_blank" style="color:#818cf8; text-decoration:none;">Watch Proof</a>
+              <a href="${run.proof_url}" target="_blank" class="proof-link">Watch Proof</a>
               ${revokeBtn}
             </td>
           </tr>
@@ -527,7 +656,7 @@
       const seedType = document.getElementById('form-seed-type').value;
       const seedVal = document.getElementById('form-seed').value || 'N/A';
       const versionRange = document.getElementById('form-version-range').value;
-      
+
       const igtSec = parseToSeconds(
         document.getElementById('igt-h').value,
         document.getElementById('igt-m').value,
@@ -548,6 +677,8 @@
       const mods = document.getElementById('form-mods').value;
       const desc = document.getElementById('form-description').value;
 
+      // Note: 'status' isn't set here on purpose — a DB trigger forces
+      // every new row to 'pending' server-side regardless of payload.
       const { error } = await dbClient.from('runs').insert([{
         user_id: currentUser.id,
         runner_name: runner,
@@ -561,8 +692,7 @@
         difficulty: difficulty,
         f3_enabled: f3,
         mods: mods,
-        description: desc,
-        status: 'pending'
+        description: desc
       }]);
 
       if (error) {
@@ -589,11 +719,10 @@
       document.getElementById('submit-modal').classList.remove('active');
     }
 
-    // Profile Management & File Reader
+    // ---------------- Profile & avatar handling ----------------
     async function syncProfile(user) {
       let { data: profile } = await dbClient.from('profiles').select('*').eq('id', user.id).single();
 
-      // Create fallback profile entry if missing
       if (!profile) {
         const username = user.user_metadata?.full_name || user.user_metadata?.name || 'Runner';
         const avatar = user.user_metadata?.avatar_url || '';
@@ -613,17 +742,18 @@
       }
     }
 
-    // Handle Image Upload Conversion
+    // Just preview locally + stash the File object. Upload happens on Save.
     document.getElementById('edit-avatar-file').addEventListener('change', function(e) {
       const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          base64Avatar = evt.target.result;
-          document.getElementById('profile-display-avatar').src = base64Avatar;
-        };
-        reader.readAsDataURL(file);
-      }
+      if (!file) return;
+      pendingAvatarFile = file;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        document.getElementById('profile-display-avatar').src = evt.target.result; // local preview only
+      };
+      reader.readAsDataURL(file);
+      document.getElementById('avatar-upload-status').innerText = `Selected: ${file.name} (will upload on save)`;
     });
 
     async function saveProfileSettings(e) {
@@ -632,27 +762,49 @@
 
       const screenName = document.getElementById('edit-screenname').value;
       const bio = document.getElementById('edit-bio').value;
+      const statusEl = document.getElementById('avatar-upload-status');
 
       const updatePayload = {
         screen_name: screenName,
         bio: bio
       };
 
-      if (base64Avatar) {
-        updatePayload.avatar_url = base64Avatar;
+      if (pendingAvatarFile) {
+        statusEl.innerText = 'Uploading avatar...';
+        const ext = pendingAvatarFile.name.split('.').pop();
+        const path = `${currentUser.id}/avatar.${ext}`;
+
+        const { error: uploadError } = await dbClient.storage
+          .from('avatars')
+          .upload(path, pendingAvatarFile, { upsert: true, cacheControl: '3600' });
+
+        if (uploadError) {
+          alert("Avatar upload failed: " + uploadError.message);
+          statusEl.innerText = 'Upload failed.';
+          return;
+        }
+
+        const { data: publicUrlData } = dbClient.storage.from('avatars').getPublicUrl(path);
+        // cache-bust so the new avatar shows immediately even with the same filename
+        updatePayload.avatar_url = `${publicUrlData.publicUrl}?t=${Date.now()}`;
       }
 
       const { error } = await dbClient.from('profiles').update(updatePayload).eq('id', currentUser.id);
 
       if(!error) {
         alert("Profile settings updated!");
+        pendingAvatarFile = null;
+        statusEl.innerText = '';
         syncProfile(currentUser);
       } else {
         alert("Error saving profile: " + error.message);
       }
     }
 
-    // Admin Panel Actions
+    // ---------------- Admin panel ----------------
+    // isAdminUser only controls what renders here. The real gate is the
+    // is_admin() check inside the RLS policies on runs/audit_logs, so
+    // these buttons are safe even if someone forces this panel open.
     async function checkAdminRole(userId) {
       const { data } = await dbClient.from('profiles').select('is_admin').eq('id', userId).single();
       if (data && data.is_admin) {
@@ -660,6 +812,9 @@
         document.getElementById('admin-panel').style.display = 'block';
         loadAdminPendingQueue();
         loadAdminAuditLogs();
+      } else {
+        isAdminUser = false;
+        document.getElementById('admin-panel').style.display = 'none';
       }
     }
 
@@ -675,13 +830,13 @@
 
       pending.forEach(run => {
         container.innerHTML += `
-          <div style="background:var(--bg-input); padding:0.8rem; border-radius:4px; margin-bottom:0.5rem; border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+          <div class="admin-row">
             <div>
-              <strong style="color:#fff;">${run.runner_name}</strong> - ${run.category} (${run.seed_type}) - <span style="color:var(--accent-green);">${run.time_seconds}s</span><br>
-              <a href="${run.proof_url}" target="_blank" style="color:#818cf8; font-size:0.75rem;">Review Proof Video</a>
+              <strong style="color:var(--text-main);">${run.runner_name}</strong> - ${run.category} (${run.seed_type}) - <span style="color:var(--accent);">${run.time_seconds}s</span><br>
+              <a href="${run.proof_url}" target="_blank" style="color:var(--accent); font-size:0.75rem;">Review Proof Video</a>
             </div>
             <div style="display:flex; gap:0.4rem;">
-              <button onclick="moderateRun('${run.id}', 'approved')" class="btn-submit" style="font-size:0.75rem; padding:0.3rem 0.6rem;">Verify Run</button>
+              <button onclick="moderateRun('${run.id}', 'approved')" class="btn-submit" style="font-size:0.75rem; padding:0.35rem 0.7rem;">Verify Run</button>
               <button onclick="moderateRun('${run.id}', 'rejected')" class="btn-danger">Reject</button>
             </div>
           </div>
@@ -740,7 +895,7 @@
     async function loadAdminAuditLogs() {
       const filter = document.getElementById('audit-filter').value;
       let query = dbClient.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(20);
-      
+
       if(filter !== 'ALL') {
         query = query.eq('action_type', filter);
       }
@@ -772,10 +927,10 @@
       runs.forEach(run => {
         tbody.innerHTML += `
           <tr>
-            <td style="color:#fff; font-weight:bold;">${run.runner_name}</td>
-            <td><span style="background:#1c3d24; color:var(--accent-green); padding:2px 6px; border-radius:4px; font-size:0.75rem;">${run.category}</span></td>
-            <td style="font-family:monospace; color:var(--accent-green);">${formatDigitalTime(run.time_seconds)}</td>
-            <td><a href="${run.proof_url}" target="_blank" style="color:#818cf8; text-decoration:none;">Watch</a></td>
+            <td style="color:var(--text-main); font-weight:600;">${run.runner_name}</td>
+            <td><span class="pill" style="color:var(--accent); border-color:var(--accent-dim);">${run.category}</span></td>
+            <td class="time-cell">${formatDigitalTime(run.time_seconds)}</td>
+            <td><a href="${run.proof_url}" target="_blank" class="proof-link">Watch</a></td>
           </tr>
         `;
       });
@@ -787,12 +942,12 @@
       container.innerHTML = '';
 
       if(!logs || logs.length === 0) {
-        container.innerHTML = '<p>No activity recorded yet.</p>';
+        container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">No activity recorded yet.</p>';
         return;
       }
 
       logs.forEach(log => {
-        container.innerHTML += `<div style="margin-bottom:0.4rem; border-bottom:1px solid var(--border-color); padding-bottom:0.2rem;">${log.details}</div>`;
+        container.innerHTML += `<div class="feed-item">${log.details}</div>`;
       });
     }
 
